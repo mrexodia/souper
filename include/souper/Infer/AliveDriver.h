@@ -29,7 +29,8 @@ namespace souper {
 class AliveDriver {
   typedef std::unordered_map<const Inst *, IR::Value *> Cache;
 public:
-  AliveDriver(Inst *LHS_, Inst *PreCondition_, InstContext &IC_);
+  AliveDriver(Inst *LHS_, Inst *PreCondition_, InstContext &IC_,
+               std::vector<Inst *> ExtraInputs = {});
 
   std::map<Inst *, llvm::APInt> synthesizeConstants(souper::Inst *RHS);
   std::map<Inst *, llvm::APInt> synthesizeConstantsWithCegis(souper::Inst *RHS, InstContext &IC);
@@ -48,9 +49,11 @@ private:
   std::map<const Inst *, std::string> NameMap;
   void copyInputs(Cache &To, IR::Function &RHS);
 
-  std::unordered_map<int, IR::Type*> TypeCache;
+  std::unordered_map<std::string, IR::Type*> TypeCache;
+
 
   IR::Type &getType(int n);
+  IR::Type &getOverflowType(int n);
 
   bool translateRoot(const Inst *I, const Inst *PC, IR::Function &F, Cache &ExprCache);
   bool translateAndCache(const Inst *I, IR::Function &F, Cache &ExprCache);
@@ -67,7 +70,7 @@ private:
 };
 
 bool isTransformationValid(Inst* LHS, Inst* RHS, const std::vector<InstMapping> &PCs,
-                           InstContext &IC);
+                           const souper::BlockPCs &BPCs, InstContext &IC);
 
 bool isCandidateInfeasible(Inst *RHS, ValueCache &C, llvm::APInt LHSValue,
                           InstContext &IC);
