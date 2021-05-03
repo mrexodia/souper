@@ -235,7 +235,7 @@ Inst *ExprBuilder::makeArrayRead(Value *V) {
         // with this approach, we might be restricting the constant
         // range harvesting. Because range info. might be coming from
         // llvm values other than instruction.
-        auto LVIRange = LVI->getConstantRange(V, I);
+        auto LVIRange = LVI->getConstantRange(V, I->getParent(), I);
         auto SC = SE->getSCEV(V);
         auto R1 = LVIRange.intersectWith(SE->getSignedRange(SC));
         auto R2 = LVIRange.intersectWith(SE->getUnsignedRange(SC));
@@ -933,7 +933,7 @@ void PrintDataflowInfo(Function &F, Instruction &I, LazyValueInfo *LVI,
     ConstantRange Range = llvm::ConstantRange(Width, /*isFullSet=*/true);
     if (V->getType()->isIntegerTy()) {
       if (Instruction *I = dyn_cast<Instruction>(V)) {
-        auto LVIRange = LVI->getConstantRange(V, I);
+        auto LVIRange = LVI->getConstantRange(V, I->getParent(), I);
         auto SC = SE->getSCEV(V);
         auto R1 = LVIRange.intersectWith(SE->getSignedRange(SC));
         auto R2 = LVIRange.intersectWith(SE->getUnsignedRange(SC));
@@ -956,6 +956,10 @@ void ExtractExprCandidates(Function &F, const LoopInfo *LI, DemandedBits *DB,
   for (auto &BB : F) {
     std::unique_ptr<BlockCandidateSet> BCS(new BlockCandidateSet);
     for (auto &I : BB) {
+      // SATURN filter candidates
+      if (Opts.CandidateFilterInstruction &&
+          Opts.CandidateFilterInstruction != &I)
+        continue;
       if (isa<ReturnInst>(I))
         PrintDataflowInfo(F, I, LVI, SE);
 
