@@ -263,6 +263,16 @@ add_library(souperTool STATIC
   ${SOUPER_TOOL_FILES}
 )
 
+set(SOUPER_CODEGEN_FILES
+  lib/Codegen/Codegen.cpp
+  lib/Codegen/MachineCost.cpp
+  include/souper/Codegen/Codegen.h
+)
+
+add_library(souperCodegen STATIC
+  ${SOUPER_CODEGEN_FILES}
+)
+
 set(SOUPER_SOURCES
   ${SOUPER_EXTRACTOR_FILES}
   ${SOUPER_INST_FILES}
@@ -270,12 +280,8 @@ set(SOUPER_SOURCES
   ${SOUPER_PARSER_FILES}
   ${SOUPER_SMTLIB2_FILES}
   ${SOUPER_TOOL_FILES}
-  ${SOUPER_INFER_FILES})
-
-set(SOUPER_CODEGEN_FILES
-  lib/Codegen/Codegen.cpp
-  include/souper/Codegen/Codegen.h
-)
+  ${SOUPER_INFER_FILES}
+  ${SOUPER_CODEGEN_FILES})
 
 add_library(souperPass SHARED
   ${KLEE_EXPR_FILES}
@@ -353,6 +359,10 @@ add_executable(parser_tests
   unittests/Parser/ParserTests.cpp
 )
 
+add_executable(codegen_tests
+  unittests/Codegen/CodegenTests.cpp
+)
+
 add_executable(interpreter_tests
   unittests/Interpreter/InterpreterInfra.cpp
   unittests/Interpreter/InterpreterTests.cpp)
@@ -407,7 +417,7 @@ foreach(target souperClangTool clang-souper)
   set_target_properties(${target} PROPERTIES COMPILE_FLAGS "${CLANG_CXXFLAGS} ${LLVM_CXXFLAGS}")
   target_include_directories(${target} PRIVATE "${LLVM_INCLUDEDIR}" ${CLANG_INCLUDEDIR})
 endforeach()
-foreach(target extractor_tests inst_tests parser_tests interpreter_tests bulk_tests)
+foreach(target extractor_tests inst_tests parser_tests interpreter_tests bulk_tests codegen_tests)
   set_target_properties(${target} PROPERTIES COMPILE_FLAGS "${GTEST_CXXFLAGS} ${LLVM_CXXFLAGS}")
   target_include_directories(${target} PRIVATE "${LLVM_INCLUDEDIR}" "${GTEST_INCLUDEDIR}")
 endforeach()
@@ -415,18 +425,19 @@ endforeach()
 # static
 target_link_libraries(kleeExpr ${LLVM_LIBS} ${LLVM_LDFLAGS})
 target_link_libraries(souperClangTool souperExtractor souperTool ${CLANG_LIBS} ${LLVM_LIBS} ${LLVM_LDFLAGS})
-target_link_libraries(souperExtractor souperParser souperKVStore souperInfer souperInst kleeExpr)
+target_link_libraries(souperExtractor souperParser souperKVStore souperInfer souperInst kleeExpr souperCodegen)
 target_link_libraries(souperInfer souperExtractor ${LLVM_LIBS} ${LLVM_LDFLAGS} ${Z3_LIBRARY})
 target_link_libraries(souperInst ${LLVM_LIBS} ${LLVM_LDFLAGS})
 target_link_libraries(souperKVStore ${HIREDIS_LIBRARY} ${LLVM_LIBS} ${LLVM_LDFLAGS})
 target_link_libraries(souperParser souperInst ${LLVM_LIBS} ${LLVM_LDFLAGS} ${ALIVE_LIBRARY})
 target_link_libraries(souperSMTLIB2 ${LLVM_LIBS} ${LLVM_LDFLAGS})
 target_link_libraries(souperTool souperExtractor souperSMTLIB2)
+target_link_libraries(souperCodegen ${LLVM_LIBS} ${LLVM_LDFLAGS})
 
 # dynamic
 target_link_libraries(souperCodegen ${PASS_LDFLAGS})
-target_link_libraries(souperPass souperCodegen ${PASS_LDFLAGS} ${HIREDIS_LIBRARY} ${ALIVE_LIBRARY} ${Z3_LIBRARY})
-target_link_libraries(souperPassProfileAll souperCodegen ${PASS_LDFLAGS} ${HIREDIS_LIBRARY} ${ALIVE_LIBRARY} ${Z3_LIBRARY})
+target_link_libraries(souperPass ${PASS_LDFLAGS} ${HIREDIS_LIBRARY} ${ALIVE_LIBRARY} ${Z3_LIBRARY})
+target_link_libraries(souperPassProfileAll ${PASS_LDFLAGS} ${HIREDIS_LIBRARY} ${ALIVE_LIBRARY} ${Z3_LIBRARY})
 
 # executables
 target_link_libraries(souper souperExtractor souperKVStore souperParser souperSMTLIB2 souperTool kleeExpr ${HIREDIS_LIBRARY} ${ALIVE_LIBRARY} ${Z3_LIBRARY})
@@ -441,6 +452,7 @@ target_link_libraries(souper2llvm souperParser souperCodegen)
 target_link_libraries(extractor_tests souperExtractor souperParser ${GTEST_LIBS} ${ALIVE_LIBRARY})
 target_link_libraries(inst_tests souperInfer souperPass souperInst souperExtractor ${GTEST_LIBS} ${ALIVE_LIBRARY})
 target_link_libraries(parser_tests souperParser ${GTEST_LIBS} ${ALIVE_LIBRARY})
+target_link_libraries(codegen_tests souperCodegen souperInst ${GTEST_LIBS} ${ALIVE_LIBRARY})
 target_link_libraries(interpreter_tests souperInfer souperInst ${GTEST_LIBS} ${ALIVE_LIBRARY})
 target_link_libraries(bulk_tests souperInfer souperInst ${GTEST_LIBS} ${ALIVE_LIBRARY} ${Z3_LIBRARY})
 
@@ -470,26 +482,11 @@ configure_file(
 
 add_custom_target(check
   COMMAND ${CMAKE_BINARY_DIR}/run_lit
-  DEPENDS extractor_tests inst_tests parser-test parser_tests profileRuntime souper souper-check souper-interpret souperPass souper2llvm souperPassProfileAll count-insts interpreter_tests bulk_tests
+  DEPENDS extractor_tests inst_tests parser-test parser_tests profileRuntime souper souper-check souper-interpret souperPass souper2llvm souperPassProfileAll count-insts interpreter_tests bulk_tests codegen_tests
   USES_TERMINAL)
 
 # we want assertions even in release mode!
 string(REPLACE "-DNDEBUG" "" CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE}")
-
-find_program(GO_EXECUTABLE NAMES go DOC "go executable")
-if(NOT GO_EXECUTABLE STREQUAL "GO_EXECUTABLE-NOTFOUND")
-  add_executable(souperweb-backend
-    tools/souperweb-backend.cpp
-  )
-  set_target_properties(souperweb-backend
-    PROPERTIES COMPILE_FLAGS "${LLVM_CXXFLAGS}")
-  target_include_directories(souperweb-backend PRIVATE "${LLVM_INCLUDEDIR}")
-
-  target_link_libraries(souperweb-backend souperTool souperExtractor souperPass souperKVStore souperSMTLIB2 souperParser souperInst ${HIREDIS_LIBRARY})
-
-  add_custom_target(souperweb ALL COMMAND ${GO_EXECUTABLE} build -o ${CMAKE_BINARY_DIR}/souperweb ${CMAKE_SOURCE_DIR}/tools/souperweb.go
-                                  COMMENT "Building souperweb")
-endif()
 
 add_library(profileRuntime STATIC
   runtime/souperPassProfile.c)
