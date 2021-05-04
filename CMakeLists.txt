@@ -301,10 +301,6 @@ add_library(souperPassProfileAll SHARED
   lib/Pass/Pass.cpp
 )
 
-add_library(souperCodegen SHARED
-  ${SOUPER_CODEGEN_FILES}
-)
-
 add_library(souperCodegenStatic STATIC
   ${SOUPER_CODEGEN_FILES}
 )
