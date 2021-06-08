@@ -25,7 +25,6 @@
 #include <set>
 
 static const unsigned MaxTries = 30;
-static const unsigned MaxInputSpecializationTries = 2;
 
 bool UseAlive;
 extern unsigned DebugLevel;
@@ -92,13 +91,19 @@ namespace {
     cl::desc("Ignore cost of RHSes -- just generate them. (default=false)"),
     cl::init(false));
   static cl::opt<unsigned> MaxLHSCands("souper-max-lhs-cands",
-    cl::desc("Gather at most this many values from a LHS to use as synthesis inputs (default=8)"),
-    cl::init(8));
+    cl::desc("Gather at most this many values from a LHS to use as synthesis inputs (default=10)"),
+    cl::init(10));
+  static cl::opt<unsigned> CostFudge("souper-enumerative-synthesis-cost-fudge",
+    cl::desc("Generate guesses costing LHS + N (default=0)"),
+    cl::init(0));
   static cl::opt<bool> OnlyInferI1("souper-only-infer-i1",
     cl::desc("Only infer integer constants with width 1 (default=false)"),
     cl::init(false));
   static cl::opt<bool> OnlyInferIN("souper-only-infer-iN",
     cl::desc("Only infer integer constants (default=false)"),
+    cl::init(false));
+  static cl::opt<bool> TryShrinkConsts("souper-shrink-consts",
+    cl::desc("Try to shrink constants (defaults=false)"),
     cl::init(false));
 }
 
@@ -181,7 +186,7 @@ void sortGuesses(Container &Guesses) {
 
 using CallbackType = std::function<bool(Inst *)>;
 
-bool getGuesses(const std::vector<Inst *> &Inputs,
+bool getGuesses(const std::set<Inst *> &Inputs,
                 int Width, int LHSCost,
                 InstContext &IC, Inst *PrevInst, Inst *PrevSlot,
                 int &TooExpensive,
@@ -489,8 +494,9 @@ bool getGuesses(const std::vector<Inst *> &Inputs,
       }
     }
   }
+
+  // FIXME: This is a bit heavy-handed. Find a way to eliminate this sorting.
   sortGuesses(PartialGuesses);
-  //FIXME: This is a bit heavy-handed. Find a way to eliminate this sorting.
 
   for (auto I : PartialGuesses) {
     Inst *JoinedGuess;
@@ -747,22 +753,23 @@ std::error_code synthesizeWithKLEE(SynthesisContext &SC, std::vector<Inst *> &RH
         RHS = nullptr;
       }
     }
-
-    // FIXME shrink constants properly, this is a placeholder where we
-    // just see if we can replace every constant with zero
-    if (RHS && !ResultConstMap.empty() && DoubleCheckWithAlive) {
-      std::map <Inst *, llvm::APInt> ZeroConstMap;
-      for (auto it : ResultConstMap) {
-        auto I = it.first;
-        ZeroConstMap[I] = llvm::APInt(I->Width, 0);
+    if (TryShrinkConsts) {
+      // FIXME shrink constants properly, this is a placeholder where we
+      // just see if we can replace every constant with zero
+      // TODO(manasij) : Implement binary search, involve alive only when we find a solution
+      if (RHS && !ResultConstMap.empty() && DoubleCheckWithAlive) {
+        std::map <Inst *, llvm::APInt> ZeroConstMap;
+        for (auto it : ResultConstMap) {
+          auto I = it.first;
+          ZeroConstMap[I] = llvm::APInt(I->Width, 0);
+        }
+        std::map<Inst *, Inst *> InstCache;
+        std::map<Block *, Block *> BlockCache;
+        auto newRHS = getInstCopy(I, SC.IC, InstCache, BlockCache, &ZeroConstMap, false, false);
+        if (isTransformationValid(SC.LHS, newRHS, SC.PCs, SC.BPCs, SC.IC))
+          RHS = newRHS;
       }
-      std::map<Inst *, Inst *> InstCache;
-      std::map<Block *, Block *> BlockCache;
-      auto newRHS = getInstCopy(I, SC.IC, InstCache, BlockCache, &ZeroConstMap, false, false);
-      if (isTransformationValid(SC.LHS, newRHS, SC.PCs, SC.BPCs, SC.IC))
-        RHS = newRHS;
     }
-    
     if (RHS) {
       RHSs.emplace_back(RHS);
       if (!SC.CheckAllGuesses)
@@ -803,12 +810,18 @@ EnumerativeSynthesis::synthesize(SMTLIBSolver *SMTSolver,
   SynthesisContext SC{IC, SMTSolver, LHS, getUBInstCondition(SC.IC, SC.LHS),
       PCs, BPCs, CheckAllGuesses, Timeout};
   std::error_code EC;
-  std::vector<Inst *> Cands;
+  std::set<Inst *> Cands;
   findCands(SC.LHS, Cands, /*WidthMustMatch=*/false, /*FilterVars=*/false, MaxLHSCands);
+  for (auto BPC : SC.BPCs)
+    findCands(BPC.PC.LHS, Cands, /*WidthMustMatch=*/false, /*FilterVars=*/false, MaxLHSCands);
+  for (auto PC : SC.PCs)
+    findCands(PC.LHS, Cands, /*WidthMustMatch=*/false, /*FilterVars=*/false, MaxLHSCands);
+  // do not use LHS itself as a candidate
+  Cands.erase(SC.LHS);
   if (DebugLevel > 1)
     llvm::errs() << "got " << Cands.size() << " candidates from LHS\n";
 
-  int LHSCost = souper::cost(SC.LHS, /*IgnoreDepsWithExternalUses=*/true);
+  int LHSCost = souper::cost(SC.LHS, /*IgnoreDepsWithExternalUses=*/true) + CostFudge;
 
   int TooExpensive = 0;
 

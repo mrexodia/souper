@@ -28,7 +28,7 @@ execute_process(
   OUTPUT_STRIP_TRAILING_WHITESPACE
 )
 
-set(LLVM_CXXFLAGS "${LLVM_CXXFLAGS} -fno-exceptions -fno-rtti")
+set(LLVM_CXXFLAGS "${LLVM_CXXFLAGS} -fno-exceptions -fno-rtti -Wno-deprecated-enum-enum-conversion")
 
 execute_process(
   COMMAND ${LLVM_CONFIG_EXECUTABLE} --libs
@@ -490,6 +490,7 @@ add_library(profileRuntime STATIC
 set(SOUPER_PASS ${CMAKE_BINARY_DIR}/${CMAKE_SHARED_LIBRARY_PREFIX}souperPass${CMAKE_SHARED_LIBRARY_SUFFIX})
 set(SOUPER_PASS_PROFILE_ALL ${CMAKE_BINARY_DIR}/${CMAKE_SHARED_LIBRARY_PREFIX}souperPassProfileAll${CMAKE_SHARED_LIBRARY_SUFFIX})
 set(PROFILE_LIBRARY ${CMAKE_BINARY_DIR}/${CMAKE_STATIC_LIBRARY_PREFIX}profileRuntime${CMAKE_STATIC_LIBRARY_SUFFIX})
+configure_file(${CMAKE_SOURCE_DIR}/utils/compare_pruning_output.in ${CMAKE_BINARY_DIR}/compare_pruning_output @ONLY)
 configure_file(${CMAKE_SOURCE_DIR}/utils/reduce.in ${CMAKE_BINARY_DIR}/reduce @ONLY)
 configure_file(${CMAKE_SOURCE_DIR}/utils/cache_dump.in ${CMAKE_BINARY_DIR}/cache_dump @ONLY)
 configure_file(${CMAKE_SOURCE_DIR}/utils/cache_dfa.in ${CMAKE_BINARY_DIR}/cache_dfa @ONLY)
@@ -497,6 +498,8 @@ configure_file(${CMAKE_SOURCE_DIR}/utils/cache_import.in ${CMAKE_BINARY_DIR}/cac
 configure_file(${CMAKE_SOURCE_DIR}/utils/cache_infer.in ${CMAKE_BINARY_DIR}/cache_infer @ONLY)
 configure_file(${CMAKE_SOURCE_DIR}/utils/py_souper2llvm.in ${CMAKE_BINARY_DIR}/py_souper2llvm @ONLY)
 configure_file(${CMAKE_SOURCE_DIR}/include/souper/Tool/GetSolver.h.in ${CMAKE_BINARY_DIR}/include/souper/Tool/GetSolver.h @ONLY)
+configure_file(${CMAKE_SOURCE_DIR}/include/souper/KVStore/KVSocket.h.in ${CMAKE_BINARY_DIR}/include/souper/KVStore/KVSocket.h @ONLY)
+configure_file(${CMAKE_SOURCE_DIR}/utils/redis-unix-socket.conf.in ${CMAKE_BINARY_DIR}/redis-unix-socket.conf @ONLY)
 
 if (BUILD_CLANG_TOOL)
   configure_file(${CMAKE_SOURCE_DIR}/utils/sclang.in ${CMAKE_BINARY_DIR}/sclang @ONLY)

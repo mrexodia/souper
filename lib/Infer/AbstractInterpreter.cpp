@@ -613,27 +613,7 @@ namespace souper {
       Result = KB0.trunc(I->Width);
       break;
     case Inst::Eq: {
-      // Below implementation, because it contains isReservedConst, is
-      // difficult to put inside BinaryTransferFunctionsKB but it's able to
-      // prune more stuff; so, let's keep both
-      Inst *Constant = nullptr;
-      llvm::KnownBits Other;
-      // Synthesized constant cannot be zero.
-      if (isReservedConst(I->Ops[0])) {
-        Constant = I->Ops[0];
-        Other = KB1;
-      } else if (isReservedConst(I->Ops[1])) {
-        Constant = I->Ops[1];
-        Other = KB0;
-      }
-
-      // Constants are never equal to 0
-      if (Constant != nullptr && Other.Zero.isAllOnesValue()) {
-        Result.Zero.setBit(0);
-      }
-
-      // Fallback to our tested implmentation
-      Result = getMostPreciseKnownBits(Result, BinaryTransferFunctionsKB::eq(KB0, KB1));
+      Result = BinaryTransferFunctionsKB::eq(KB0, KB1);
       break;
     }
     case Inst::Ne:
@@ -871,17 +851,25 @@ namespace souper {
       Result = llvm::ConstantRange(llvm::APInt(I->Width, isReservedConst(I->Ops[0]) ? 1 : 0),
                                    llvm::APInt(I->Width, I->Ops[0]->Width + 1));
       break;
-    case Inst::Phi:
-      Result = CR0.unionWith(CR1);
+    case Inst::Phi: {
+        auto Result = CR0;
+        for (size_t i = 1; i < I->Ops.size(); ++i) {
+          Result = Result.unionWith(findConstantRange(I->Ops[i], CI, UsePartialEval));
+        }
+      }
       break;
-    case Inst::Select:
-      if (getSetSize(CR0) == 1) {
-        if (CR0.contains(APInt(1, 1)))
-          Result = CR1;
-        else if (CR0.contains(APInt(1, 0)))
-          Result = CR2;
-      } else {
-        Result = CR1.unionWith(CR2);
+    case Inst::Select: {
+        auto TVal = CR1, FVal = CR2;
+        if (isReservedConst(I->Ops[1])) TVal = llvm::ConstantRange(I->Width, /*isFullSet=*/true);
+        if (isReservedConst(I->Ops[2])) FVal = llvm::ConstantRange(I->Width, /*isFullSet=*/true);
+        if (getSetSize(CR0) == 1) {
+          if (CR0.contains(APInt(1, 1)))
+            Result = TVal;
+          else if (CR0.contains(APInt(1, 0)))
+            Result = FVal;
+        } else {
+          Result = TVal.unionWith(FVal);
+        }
       }
       break;
       //     case Inst::SDiv: {
@@ -1302,11 +1290,6 @@ s.push(); s.add(ForAll(z, y != (x < z))); print("slt", s.check()); s.pop()
             Other.One.setBit(i);
           } else {
             Other.One.setBit(i);
-          }
-        }
-        if (R.Zero[i]) {
-          if (Op.Zero[i]) {
-            Other.Zero.setBit(i);
           }
         }
       }

@@ -284,6 +284,7 @@ synthesizeConstantUsingSolver(tools::Transform &t,
 souper::AliveDriver::AliveDriver(Inst *LHS_, Inst *PreCondition_, InstContext &IC_,
                                  std::vector<Inst *> ExtraInputs)
     : LHS(LHS_), PreCondition(PreCondition_), IC(IC_) {
+  smt::set_query_timeout(std::to_string(60000)); // milliseconds
   IsLHS = true;
   InstNumbers = 101;
   //FIXME: Magic number. 101 is chosen arbitrarily.
@@ -437,15 +438,16 @@ bool souper::AliveDriver::verify (Inst *RHS, Inst *RHSAssumptions) {
     return false;
 
   if (auto errs = tv.verify()) {
-    if (DebugLevel >= 1) {
+    if (DebugLevel >= 2) {
       std::ostringstream os;
       os << errs << "\n";
       llvm::errs() << os.str();
+      llvm::errs() << "RHS rejected by Alive2\n";
     }
     return false; // TODO: Encode errs into ErrorCode
   } else {
-    if (DebugLevel > 2)
-      llvm::errs() << "RHS proved valid.\n";
+    if (DebugLevel >= 2)
+      llvm::errs() << "RHS verified by Alive2\n";
     return true;
   }
 }
@@ -463,9 +465,7 @@ bool souper::AliveDriver::translateRoot(const souper::Inst *I, const Inst *PC,
 
   FunctionBuilder Builder(F);
   if (PC) {
-    auto Zero = Builder.val(getType(I->Width), llvm::APInt(I->Width, 0));
-    ExprCache[I] = Builder.select(getType(I->Width), "%ifpc",
-                   ExprCache[PC], ExprCache[I], Zero);
+    Builder.assume(ExprCache[PC]);
   }
   Builder.ret(getType(I->Width), ExprCache[I]);
   F.setType(getType(I->Width));
@@ -803,6 +803,7 @@ struct RefinementProblem {
   RefinementProblem ReplacePhi(souper::InstContext &IC, std::map<Block *, size_t> &Change) {
     std::map<souper::Block *, std::set<souper::Inst *>> Phis;
     collectPhis(LHS, Phis);
+    collectPhis(RHS, Phis);
     collectPhis(Pre, Phis);
     for (auto &BPC : BPCs) {
       collectPhis(BPC.PC.LHS, Phis);

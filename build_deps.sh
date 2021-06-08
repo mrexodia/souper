@@ -21,18 +21,18 @@ fi
 
 ncpus=$(command nproc 2>/dev/null || command sysctl -n hw.ncpu 2>/dev/null || echo 8)
 
-# hiredis version 0.14.0
-hiredis_commit=685030652cd98c5414ce554ff5b356dfe8437870
+# hiredis latest as of May 7 2021
+hiredis_commit=667dbf536524ba3f28c1d964793db1055c5a64f2
 llvm_repo=https://github.com/regehr/llvm-project.git
 # llvm_commit specifies the git branch or hash to checkout to
-llvm_commit=disable-peepholes-v05
+llvm_commit=disable-peepholes-llvm12-v02
 klee_repo=https://github.com/rsas/klee
 klee_branch=pure-bv-qf-llvm-7.0
 alive_commit=v2
 alive_repo=https://github.com/manasij7479/alive2.git
 z3_repo=https://github.com/Z3Prover/z3.git
-#z3_commit=z3-4.8.10
-z3_commit=323e0e62705d31edc0ce06c6b4378c45c6b6184d
+# latest as of May 25 2021
+z3_commit=322531e95cb7da59b4596000ffbc92d792433f17
 
 llvm_build_type=Release
 if [ -n "$1" ] ; then
@@ -115,5 +115,5 @@ mkdir -p $hiredis_installdir/include/hiredis
 mkdir -p $hiredis_installdir/lib
 
 (cd $hiredis_srcdir && git checkout $hiredis_commit && make libhiredis.a &&
- cp -r hiredis.h async.h read.h sds.h adapters ${hiredis_installdir}/include/hiredis &&
+ cp -r alloc.h hiredis.h async.h read.h sds.h adapters ${hiredis_installdir}/include/hiredis &&
  cp libhiredis.a ${hiredis_installdir}/lib)
