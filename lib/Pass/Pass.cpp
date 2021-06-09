@@ -390,7 +390,7 @@ public:
         }
       }
 
-      eliminateDeadCode(*F, TLI);
+      // eliminateDeadCode(*F, TLI);
 
       if (DebugLevel > 2) {
         if (DebugLevel > 4) {
