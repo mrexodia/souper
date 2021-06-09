@@ -472,6 +472,12 @@ static void registerSouperPass(
   PM.add(new SouperPass);
 }
 
+void addSouperPass(
+    llvm::legacy::PassManagerBase &PM) {
+  PM.add(new SouperPass);
+}
+
+/*
 static llvm::RegisterStandardPasses
 #ifdef DYNAMIC_PROFILE_ALL
 RegisterSouperOptimizer(llvm::PassManagerBuilder::EP_OptimizerLast,
@@ -480,3 +486,4 @@ RegisterSouperOptimizer(llvm::PassManagerBuilder::EP_OptimizerLast,
 RegisterSouperOptimizer(llvm::PassManagerBuilder::EP_Peephole,
                         registerSouperPass);
 #endif
+*/
