@@ -37,7 +37,6 @@
 #include "llvm/Support/CommandLine.h"
 #include "llvm/Transforms/Scalar/ADCE.h"
 #include "llvm/Transforms/Scalar/DCE.h"
-#include "llvm/Transforms/Scalar.h"
 #include "llvm/Transforms/IPO/PassManagerBuilder.h"
 #include "llvm/Transforms/Utils/BasicBlockUtils.h"
 #include "llvm/Transforms/Utils/ModuleUtils.h"
@@ -58,7 +57,7 @@ unsigned DebugLevel;
 
 namespace {
 std::unique_ptr<Solver> S;
-unsigned ReplacementIdx, ReplacementsDone;
+  unsigned ReplacementIdx, ReplacementsDone, LHSNum;
 KVStore *KV;
 
 static cl::opt<unsigned, /*ExternalStorage=*/true>
@@ -69,7 +68,7 @@ DebugFlagParser("souper-debug-level",
      cl::location(DebugLevel), cl::init(1));
 
 static cl::opt<bool> Verify("souper-verify", cl::init(false),
-    cl::desc("Verify the module before and after Souper (default=false)"));
+    cl::desc("Verify functions before Souper processes them (default=false)"));
 
 static cl::opt<bool> DynamicProfile("souper-dynamic-profile", cl::init(false),
     cl::desc("Dynamic profiling of Souper optimizations (default=false)"));
@@ -91,7 +90,7 @@ static const bool DynamicProfileAll = true;
 static const bool DynamicProfileAll = false;
 #endif
 
-struct SouperPass : public FunctionPass {
+struct SouperPass : public ModulePass {
   static char ID;
 
   Value* getOperand(Inst* I, unsigned index, Instruction *ReplacedInst,
@@ -110,7 +109,7 @@ struct SouperPass : public FunctionPass {
   }
 
 public:
-  SouperPass() : FunctionPass(ID) {
+  SouperPass() : ModulePass(ID) {
     if (!S) {
       S = GetSolver(KV);
       if (StaticProfile && !KV)
@@ -201,10 +200,9 @@ public:
         .getValue(I);
   }
 
-  bool runOnFunction(Function &FRef) override {
-    auto F = &FRef;
-    if (F->isDeclaration())
-        return false;
+  bool runOnFunction(Function *F) {
+    if (Verify && verifyFunction(*F))
+      llvm::report_fatal_error("function " + F->getName() + " broken before Souper");
 
     std::string FunctionName;
     if (F->hasLocalLinkage()) {
@@ -224,17 +222,17 @@ public:
     InstContext IC;
     ExprBuilderContext EBC;
     std::map<Inst *, Value *> ReplacedValues;
-    LoopInfo *LI = &getAnalysis<LoopInfoWrapperPass>().getLoopInfo();
+    LoopInfo *LI = &getAnalysis<LoopInfoWrapperPass>(*F).getLoopInfo();
     if (!LI)
       report_fatal_error("getLoopInfo() failed");
-    auto &DT = getAnalysis<DominatorTreeWrapperPass>().getDomTree();
-    DemandedBits *DB = &getAnalysis<DemandedBitsWrapperPass>().getDemandedBits();
+    auto &DT = getAnalysis<DominatorTreeWrapperPass>(*F).getDomTree();
+    DemandedBits *DB = &getAnalysis<DemandedBitsWrapperPass>(*F).getDemandedBits();
     if (!DB)
       report_fatal_error("getDemandedBits() failed");
-    LazyValueInfo *LVI = &getAnalysis<LazyValueInfoWrapperPass>().getLVI();
+    LazyValueInfo *LVI = &getAnalysis<LazyValueInfoWrapperPass>(*F).getLVI();
     if (!LVI)
       report_fatal_error("getLVI() failed");
-    ScalarEvolution *SE = &getAnalysis<ScalarEvolutionWrapperPass>().getSE();
+    ScalarEvolution *SE = &getAnalysis<ScalarEvolutionWrapperPass>(*F).getSE();
     if (!SE)
       report_fatal_error("getSE() failed");
     TargetLibraryInfo* TLI = &getAnalysis<TargetLibraryInfoWrapperPass>().getTLI(*F);
@@ -258,22 +256,23 @@ public:
       errs() << "; extracted candidates\n";
 
     CandidateMap CandMap;
-    for (auto &B : CS.Blocks) {
-      for (auto &R : B->Replacements) {
-        if (DebugLevel > 4) {
-          errs() << "\n; *****";
-          errs() << "\n; For LLVM instruction:\n;";
-          R.Origin->print(errs());
-          errs() << "\n; Looking for a replacement for:\n";
-          ReplacementContext Context;
-          PrintReplacementLHS(errs(), R.BPCs, R.PCs, R.Mapping.LHS, Context);
-        }
+    for (auto &B : CS.Blocks)
+      for (auto &R : B->Replacements)
         AddToCandidateMap(CandMap, R);
-      }
-    }
 
     for (auto &Cand : CandMap) {
 
+      if (DebugLevel > 1)
+        errs() << "\n================= LHS number " << ++LHSNum << " ====================\n\n";
+
+      if (DebugLevel > 3) {
+        errs() << "\n; For LLVM instruction:\n;";
+        Cand.Origin->print(errs());
+        errs() << "\n; Looking for a replacement for:\n";
+        ReplacementContext Context;
+        PrintReplacementLHS(errs(), Cand.BPCs, Cand.PCs, Cand.Mapping.LHS, Context);
+      }
+      
       if (StaticProfile) {
         std::string Str;
         llvm::raw_string_ostream Loc(Str);
@@ -294,9 +293,12 @@ public:
                    RHSs, /*AllowMultipleRHSs=*/false, IC)) {
         if (EC == std::errc::timed_out ||
             EC == std::errc::value_too_large) {
+          if (DebugLevel > 1)
+            errs() << "query error for LHS number " << LHSNum << "\n";
           continue;
         } else {
           llvm::errs() << "[FIXME: Crash commented out]\nUnable to query solver: " + EC.message() + "\n";
+          errs() << "query error for LHS number " << LHSNum << "\n";
           continue;
           // TODO: This is a temporary workaround to suppress a protocol error which is encountered
           // once in SPEC 2017. This workaround does not have a negative effect other than maybe
@@ -304,8 +306,11 @@ public:
           //report_fatal_error("Unable to query solver: " + EC.message() + "\n");
         }
       }
-      if (RHSs.empty())
+      if (RHSs.empty()) {
+        if (DebugLevel > 1)
+          errs() << "no solutions for LHS number " << LHSNum << "\n";
         continue;
+      }
 
       Cand.Mapping.RHS = RHSs.front();
 
@@ -323,14 +328,11 @@ public:
       // TODO can we assert that getValue() succeeds?
       if (!NewVal) {
         if (DebugLevel > 1)
-          errs() << "\"\n; replacement failed\n";
+          errs() << "\"\n; replacement failed for LHS number " << LHSNum << ", getValue() returned null\n";
         continue;
       }
 
       // here we finally commit to having a viable replacement
-
-      if (DebugLevel > 1)
-        errs() << "#########################################################\n";
 
       if (ReplacementIdx < FirstReplace || ReplacementIdx > LastReplace) {
         if (DebugLevel > 1)
@@ -388,12 +390,7 @@ public:
         }
       }
 
-      //eliminateDeadCode(*F, TLI);
-      llvm::legacy::FunctionPassManager Passes(F->getParent());
-      Passes.add(llvm::createDeadCodeEliminationPass());
-      Passes.doInitialization();
-      Passes.run(*F);
-      Passes.doFinalization();
+      eliminateDeadCode(*F, TLI);
 
       if (DebugLevel > 2) {
         if (DebugLevel > 4) {
@@ -406,20 +403,44 @@ public:
         errs() << "\n";
       }
 
-      if (DebugLevel > 1) {
-        errs() << "#########################################################\n";
-        errs() << "; exiting Souper's runOnFunction() for " << FunctionName << "()\n";
-      }
-
+      if (DebugLevel > 1)
+        errs() << "done with LHS number " << LHSNum << " after doing a replacement\n";
+      
       return true;
     }
 
-    if (DebugLevel > 1) {
-      errs() << "#########################################################\n";
-      errs() << "; exiting Souper's runOnFunction() for " << FunctionName << "()\n";
-    }
     return false;
   }
+
+  bool runOnModule(Module &M) {
+    if (DebugLevel > 3)
+      errs() << "\nEntering the Souper pass's runOnModule()\n\n";
+
+    // we have to construct this list first, since dynamic profiling
+    // adds functions as it goes
+    std::vector<Function *> FuncList;
+    for (auto &F : M)
+      if (!F.isDeclaration())
+        FuncList.push_back(&F);
+
+    bool Changed = false;
+    for (auto *F : FuncList) {
+      while (runOnFunction(F)) {
+        Changed = true;
+        if (verifyFunction(*F))
+          llvm::report_fatal_error("function broken after Souper changed it");
+        if (DebugLevel > 2)
+          errs() << "rescanning function after transformation was applied\n";
+      }
+    }
+
+    if (DebugLevel > 1)
+      errs() << "\nExiting the Souper pass's runOnModule() with "
+             << ReplacementsDone << " replacements\n";
+
+    return Changed;
+  }
+
 };
 
 char SouperPass::ID = 0;
@@ -451,12 +472,6 @@ static void registerSouperPass(
   PM.add(new SouperPass);
 }
 
-void addSouperPass(
-    llvm::legacy::PassManagerBase &PM) {
-  PM.add(new SouperPass);
-}
-
-/*
 static llvm::RegisterStandardPasses
 #ifdef DYNAMIC_PROFILE_ALL
 RegisterSouperOptimizer(llvm::PassManagerBuilder::EP_OptimizerLast,
@@ -465,4 +480,3 @@ RegisterSouperOptimizer(llvm::PassManagerBuilder::EP_OptimizerLast,
 RegisterSouperOptimizer(llvm::PassManagerBuilder::EP_Peephole,
                         registerSouperPass);
 #endif
-*/
