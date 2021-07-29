@@ -81,9 +81,9 @@ include_directories("${ALIVE_SRCDIR}/alive2")
 
 set(CLANG_LIBS "-lclangCodeGen -lclangTooling -lclangRewrite -lclangFrontend -lclangAnalysis -lclangParse -lclangSerialization -lclangSema -lclangEdit -lclangAnalysis -lclangAST -lclangDriver -lclangLex -lclangBasic -lclangASTMatchers")
 
-set(GTEST_CXXFLAGS "-DGTEST_HAS_RTTI=0")
-set(GTEST_INCLUDEDIR "${LLVM_SRC}/utils/unittest/googletest/include")
-set(GTEST_LIBS "-lgtest_main -lgtest")
+#set(GTEST_CXXFLAGS "-DGTEST_HAS_RTTI=0")
+#set(GTEST_INCLUDEDIR "${LLVM_SRC}/utils/unittest/googletest/include")
+#set(GTEST_LIBS "-lgtest_main -lgtest")
 
 set(LLVM_CXXFLAGS "${LLVM_CXXFLAGS} -std=c++20")
 
@@ -349,33 +349,33 @@ add_executable(souper2llvm
   tools/souper2llvm.cpp
 )
 
-add_executable(extractor_tests
-  unittests/Extractor/ExtractorTests.cpp
-)
+#add_executable(extractor_tests
+#  unittests/Extractor/ExtractorTests.cpp
+#)
 
-add_executable(inst_tests
-  unittests/Inst/InstTests.cpp
-)
+#add_executable(inst_tests
+#  unittests/Inst/InstTests.cpp
+#)
 
-add_executable(parser_tests
-  unittests/Parser/ParserTests.cpp
-)
+#add_executable(parser_tests
+#  unittests/Parser/ParserTests.cpp
+#)
 
-add_executable(codegen_tests
-  unittests/Codegen/CodegenTests.cpp
-)
+#add_executable(codegen_tests
+#  unittests/Codegen/CodegenTests.cpp
+#)
 
-add_executable(interpreter_tests
-  unittests/Interpreter/InterpreterInfra.cpp
-  unittests/Interpreter/InterpreterTests.cpp)
+#add_executable(interpreter_tests
+#  unittests/Interpreter/InterpreterInfra.cpp
+#  unittests/Interpreter/InterpreterTests.cpp)
 
 set(LLVM_LDFLAGS "${LLVM_LDFLAGS}")
 
-add_executable(bulk_tests
-  unittests/Interpreter/InterpreterInfra.cpp
-  utils/gen-xfer-funcs/BulkTests.cpp
-  utils/gen-xfer-funcs/Verification.cpp)
-target_include_directories(bulk_tests PUBLIC "${CMAKE_SOURCE_DIR}/unittests/Interpreter")
+#add_executable(bulk_tests
+#  unittests/Interpreter/InterpreterInfra.cpp
+#  utils/gen-xfer-funcs/BulkTests.cpp
+#  utils/gen-xfer-funcs/Verification.cpp)
+#target_include_directories(bulk_tests PUBLIC #"${CMAKE_SOURCE_DIR}/unittests/Interpreter")
 
 configure_file(
   ${CMAKE_SOURCE_DIR}/utils/gen-xfer-funcs/run_n.pl.in
@@ -419,10 +419,10 @@ foreach(target souperClangTool clang-souper)
   set_target_properties(${target} PROPERTIES COMPILE_FLAGS "${CLANG_CXXFLAGS} ${LLVM_CXXFLAGS}")
   target_include_directories(${target} PRIVATE "${LLVM_INCLUDEDIR}" ${CLANG_INCLUDEDIR})
 endforeach()
-foreach(target extractor_tests inst_tests parser_tests interpreter_tests bulk_tests codegen_tests)
-  set_target_properties(${target} PROPERTIES COMPILE_FLAGS "${GTEST_CXXFLAGS} ${LLVM_CXXFLAGS}")
-  target_include_directories(${target} PRIVATE "${LLVM_INCLUDEDIR}" "${GTEST_INCLUDEDIR}")
-endforeach()
+#foreach(target     bulk_tests )
+#  set_target_properties(${target} PROPERTIES COMPILE_FLAGS "${GTEST_CXXFLAGS} ${LLVM_CXXFLAGS}")
+#  target_include_directories(${target} PRIVATE "${LLVM_INCLUDEDIR}" "${GTEST_INCLUDEDIR}")
+#endforeach()
 
 # static
 target_link_libraries(kleeExpr ${LLVM_LIBS} ${LLVM_LDFLAGS})
@@ -451,12 +451,12 @@ target_link_libraries(souper-interpret souperTool souperExtractor souperKVStore 
 target_link_libraries(clang-souper souperClangTool souperExtractor souperKVStore souperParser souperSMTLIB2 souperTool kleeExpr ${CLANG_LIBS} ${LLVM_LIBS} ${LLVM_LDFLAGS} ${HIREDIS_LIBRARY} ${ALIVE_LIBRARY} ${Z3_LIBRARY})
 target_link_libraries(count-insts souperParser)
 target_link_libraries(souper2llvm souperParser souperCodegen)
-target_link_libraries(extractor_tests souperExtractor souperParser ${GTEST_LIBS} ${ALIVE_LIBRARY})
-target_link_libraries(inst_tests souperInfer souperPass souperInst souperExtractor ${GTEST_LIBS} ${ALIVE_LIBRARY})
-target_link_libraries(parser_tests souperParser ${GTEST_LIBS} ${ALIVE_LIBRARY})
-target_link_libraries(codegen_tests souperCodegen souperInst ${GTEST_LIBS} ${ALIVE_LIBRARY})
-target_link_libraries(interpreter_tests souperInfer souperInst ${GTEST_LIBS} ${ALIVE_LIBRARY})
-target_link_libraries(bulk_tests souperInfer souperInst ${GTEST_LIBS} ${ALIVE_LIBRARY} ${Z3_LIBRARY})
+#target_link_libraries(extractor_tests souperExtractor souperParser ${GTEST_LIBS} ${ALIVE_LIBRARY})
+#target_link_libraries(inst_tests souperInfer souperPass souperInst souperExtractor ${GTEST_LIBS} ${ALIVE_LIBRARY})
+#target_link_libraries(parser_tests souperParser ${GTEST_LIBS} ${ALIVE_LIBRARY})
+#target_link_libraries(codegen_tests souperCodegen souperInst ${GTEST_LIBS} ${ALIVE_LIBRARY})
+#target_link_libraries(interpreter_tests souperInfer souperInst ${GTEST_LIBS} ${ALIVE_LIBRARY})
+#target_link_libraries(bulk_tests souperInfer souperInst ${GTEST_LIBS} ${ALIVE_LIBRARY} ${Z3_LIBRARY})
 
 SET(BUILD_CLANG_TOOL 1 CACHE BOOL "Build the Souper Clang tool")
 if (NOT BUILD_CLANG_TOOL)
@@ -482,10 +482,10 @@ configure_file(
   ${CMAKE_BINARY_DIR}/souper-check-gdb.py
 )
 
-add_custom_target(check
-  COMMAND ${CMAKE_BINARY_DIR}/run_lit
-  DEPENDS extractor_tests inst_tests parser-test parser_tests profileRuntime souper souper-check souper-interpret souperPass souper2llvm souperPassProfileAll count-insts interpreter_tests bulk_tests codegen_tests
-  USES_TERMINAL)
+#add_custom_target(check
+#  COMMAND ${CMAKE_BINARY_DIR}/run_lit
+#  DEPENDS extractor_tests inst_tests parser-test parser_tests profileRuntime souper souper-check souper-interpret souperPass souper2llvm souperPassProfileAll count-insts interpreter_tests bulk_tests codegen_tests
+#  USES_TERMINAL)
 
 # we want assertions even in release mode!
 string(REPLACE "-DNDEBUG" "" CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE}")
