@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include "llvm/ADT/StringExtras.h"
 #include "llvm/Support/KnownBits.h"
 #include "llvm/Support/MemoryBuffer.h"
 
@@ -102,8 +103,8 @@ static bool parseInput(const std::string &S, std::string &Name,
 
 static bool fitsInBits(std::string str, unsigned bits) {
   auto I = APInt(bits, str, 10);
-  std::string S = I.toString(10, true);
-  std::string U = I.toString(10, false);
+  std::string S = toString(I, 10, true);
+  std::string U = toString(I, 10, false);
   return (str.compare(S) == 0) || (str.compare(U) == 0);
 }
 
@@ -142,7 +143,7 @@ static int Interpret(const MemoryBufferRef &MB, Solver *S) {
       llvm::outs() << "Constant Range result: " << CR << "\n";
 
       auto RB = RestrictedBitsAnalysis().findRestrictedBits(Reps[i].Mapping.LHS);
-      llvm::outs() << "Restricted Bits result: " << RB.toString(2, false) << "\n";
+      llvm::outs() << "Restricted Bits result: " << toString(RB, 2, false) << "\n";
 
 
       auto PrintDB = [](std::string Preamble, auto DB) {

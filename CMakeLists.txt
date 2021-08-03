@@ -11,7 +11,7 @@ endif()
 if (NOT LLVM_BUILD_TYPE)
   set(LLVM_BUILD_TYPE ${CMAKE_BUILD_TYPE})
 endif()
-set(LLVM_CONFIG_EXECUTABLE ${TOB_FOLDER}/llvm/bin/llvm-config)
+set(LLVM_CONFIG_EXECUTABLE ${LLVM_FOLDER}/bin/llvm-config)
 if(NOT EXISTS ${LLVM_CONFIG_EXECUTABLE})
   message(FATAL_ERROR "llvm-config could not be found!")
 endif()
@@ -118,7 +118,7 @@ find_path(HIREDIS_INCLUDE_DIR
   NAMES
   hiredis/hiredis.h
   PATHS
-  ${DEPENDENCIES_FOLDER}/hiredis/include
+  ${HIREDIS_FOLDER}/include
   NO_DEFAULT_PATH)
 
 include_directories(${HIREDIS_INCLUDE_DIR}/hiredis)
@@ -127,7 +127,7 @@ find_library(HIREDIS_LIBRARY
   NAMES
   hiredis
   PATHS
-  ${DEPENDENCIES_FOLDER}/hiredis/lib
+  ${HIREDIS_FOLDER}/lib
   NO_DEFAULT_PATH)
 
 find_library(ALIVE_IR ir PATHS "${ALIVE_BUILDDIR}" NO_DEFAULT_PATH)
@@ -158,11 +158,11 @@ else()
   message(SEND_ERROR "Alive2 libutil.a not found")
 endif()
 
-set(Z3 "${TOB_FOLDER}/z3/bin/z3")
-set(Z3_INCLUDE_DIR "${TOB_FOLDER}/z3/include")
+set(Z3 "${Z3_FOLDER}/bin/z3")
+set(Z3_INCLUDE_DIR "${Z3_FOLDER}/include")
 include_directories(${Z3_INCLUDE_DIR})
 
-find_library(Z3_LIBRARY z3 PATHS "${TOB_FOLDER}/z3/bin" NO_DEFAULT_PATH)
+find_library(Z3_LIBRARY z3 PATHS "${Z3_FOLDER}/bin" NO_DEFAULT_PATH)
 if (Z3_LIBRARY)
   message(STATUS "Z3 shared lib: ${Z3_LIBRARY}")
 else()  

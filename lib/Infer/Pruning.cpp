@@ -13,6 +13,7 @@
 // limitations under the License.
 
 #include "llvm/Support/CommandLine.h"
+#include "llvm/ADT/StringExtras.h"
 #include "souper/Infer/AbstractInterpreter.h"
 #include "souper/Infer/Pruning.h"
 #include "souper/Extractor/Candidates.h"
@@ -178,7 +179,7 @@ bool PruningManager::isInfeasible(souper::Inst *RHS,
       if (StatsLevel > 2) {
         llvm::errs() << "  pruned using restricted bits analysis.\n";
         llvm::errs() << "  LHSKB : " << KnownBitsAnalysis::knownBitsString(LHSKnownBitsNoSpec) << "\n";
-        llvm::errs() << "  RB    : " << RestrictedBits.toString(2, false) << "\n";
+        llvm::errs() << "  RB    : " << toString(RestrictedBits, 2, false) << "\n";
       }
       return true;
     }
@@ -217,8 +218,8 @@ bool PruningManager::isInfeasible(souper::Inst *RHS,
         // This input is must demanded in LHS and DontCare in RHS.
         if (StatsLevel > 2) {
           llvm::errs() << "Var : " << Pair.first->Name << " : ";
-          llvm::errs() << Pair.second.toString(2, false) << "\t"
-                       << DontCareBits[Pair.first].toString(2, false) << "\n";
+          llvm::errs() << toString(Pair.second, 2, false) << "\t"
+                       << toString(DontCareBits[Pair.first], 2, false) << "\n";
           llvm::errs() << "  pruned using demanded bits analysis.\n";
         }
         return true;
@@ -379,7 +380,7 @@ bool PruningManager::isInfeasible(souper::Inst *RHS,
               KNOTB.One = ConstantKnownNotOne[C];
               if (KNOTB.hasConflict()) {
                 if (StatsLevel > 2) {
-                  llvm::errs() << KNOTB.Zero.toString(2, false) << "\n" << KNOTB.One.toString(2, false) << "\n";
+                  llvm::errs() << toString(KNOTB.Zero, 2, false) << "\n" << toString(KNOTB.One, 2, false) << "\n";
                   llvm::errs() << "  pruned using KB refinement! ";
                   llvm::errs() << "Inst had a symbolic const.";
                   llvm::errs() << "\n";

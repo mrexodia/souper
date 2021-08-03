@@ -21,6 +21,7 @@
 #include "souper/Inst/Inst.h"
 
 #include "llvm/ADT/DepthFirstIterator.h"
+#include "llvm/ADT/StringExtras.h"
 #include "llvm/ADT/GraphTraits.h"
 #include "llvm/Support/raw_ostream.h"
 #include "llvm/Support/DOTGraphTraits.h"
@@ -65,7 +66,7 @@ template<> struct llvm::DOTGraphTraits<souper::Inst*> : public llvm::DefaultDOTG
     case souper::Inst::Kind::Var:
       return "Var " + instr->Name;
     case souper::Inst::Kind::Const:
-      return instr->Val.toString(10, false);
+      return toString(instr->Val, 10, false);
     default:
       return std::string(souper::Inst::getKindName(instr->K));
     }
