@@ -162,7 +162,7 @@ set(Z3 "${Z3_FOLDER}/bin/z3")
 set(Z3_INCLUDE_DIR "${Z3_FOLDER}/include")
 include_directories(${Z3_INCLUDE_DIR})
 
-find_library(Z3_LIBRARY z3 PATHS "${Z3_FOLDER}/bin" NO_DEFAULT_PATH)
+find_library(Z3_LIBRARY z3 PATHS "${Z3_FOLDER}/lib" NO_DEFAULT_PATH)
 if (Z3_LIBRARY)
   message(STATUS "Z3 shared lib: ${Z3_LIBRARY}")
 else()  
