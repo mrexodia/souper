@@ -169,6 +169,10 @@ else()
   message(SEND_ERROR "Z3 shared lib not found")
 endif()
 
+set(THREADS_PREFER_PTHREAD_FLAG ON)
+find_package(Threads)
+list(APPEND Z3_LIBRARY Threads::Threads)
+
 set(ALIVE_LIBRARY ${ALIVE_IR} ${ALIVE_SMT} ${ALIVE_TOOLS} ${ALIVE_UTIL} ${Z3_LIBRARY})
 
 set(SOUPER_CLANG_TOOL_FILES
