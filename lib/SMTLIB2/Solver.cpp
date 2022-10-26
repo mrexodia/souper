@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#define DEBUG_TYPE "souper"
+// #define DEBUG_TYPE "souper"
 
 #include "llvm/ADT/APInt.h"
 #include "llvm/ADT/SmallString.h"
@@ -35,10 +35,10 @@
 using namespace llvm;
 using namespace souper;
 
-STATISTIC(Errors, "Number of SMT solver errors");
-STATISTIC(Sats, "Number of satisfiable SMT queries");
-STATISTIC(Timeouts, "Number of SMT solver timeouts");
-STATISTIC(Unsats, "Number of unsatisfiable SMT queries");
+// STATISTIC(Errors, "Number of SMT solver errors");
+// STATISTIC(Sats, "Number of satisfiable SMT queries");
+// STATISTIC(Timeouts, "Number of SMT solver timeouts");
+// STATISTIC(Unsats, "Number of unsatisfiable SMT queries");
 
 SMTLIBSolver::~SMTLIBSolver() {}
 
@@ -228,7 +228,7 @@ public:
     SmallString<64> InputPath;
     if (std::error_code EC =
             sys::fs::createTemporaryFile("input", "smt2", InputFD, InputPath)) {
-      ++Errors;
+      // ++Errors;
       return EC;
     }
 
@@ -241,7 +241,7 @@ public:
     if (std::error_code EC =
             sys::fs::createTemporaryFile("output", "out", OutputFD,
                                          OutputPath)) {
-      ++Errors;
+      // ++Errors;
       return EC;
     }
     ::close(OutputFD);
@@ -258,12 +258,12 @@ public:
     switch (ExitCode) {
     case -2:
       ::remove(OutputPath.c_str());
-      ++Timeouts;
+      // ++Timeouts;
       return std::make_error_code(std::errc::timed_out);
 
     case -1:
       ::remove(OutputPath.c_str());
-      ++Errors;
+      // ++Errors;
       return std::make_error_code(std::errc::executable_format_error);
 
     default: {
@@ -271,14 +271,14 @@ public:
           MemoryBuffer::getFile(OutputPath.str());
       if (std::error_code EC = MB.getError()) {
         ::remove(OutputPath.c_str());
-        ++Errors;
+        // ++Errors;
         return EC;
       }
 
       if ((*MB)->getBuffer().startswith("sat\n")) {
         ::remove(OutputPath.c_str());
         Result = true;
-        ++Sats;
+        // ++Sats;
         std::string ErrStr;
         if (Models) {
           *Models = ParseModels((*MB)->getBuffer().slice(4, StringRef::npos),
@@ -290,11 +290,11 @@ public:
       } else if ((*MB)->getBuffer().startswith("unsat\n")) {
         ::remove(OutputPath.c_str());
         Result = false;
-        ++Unsats;
+        // ++Unsats;
         return std::error_code();
       } else {
         ::remove(OutputPath.c_str());
-        ++Errors;
+        // ++Errors;
         return std::make_error_code(std::errc::protocol_error);
       }
     }

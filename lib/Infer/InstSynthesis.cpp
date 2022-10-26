@@ -24,7 +24,7 @@ using namespace llvm;
 
 namespace {
 
-static cl::opt<unsigned> DebugLevel("souper-synthesis-debug-level",
+extern "C" cl::opt<unsigned> DebugLevel("souper-synthesis-debug-level",
     cl::desc("Synthesis debug level (default=0). "
     "The larger the number is, the more fine-grained debug "
     "information will be printed"),
@@ -326,9 +326,9 @@ void InstSynthesis::setCompLibrary() {
       else if (K == Inst::ZExt || K == Inst::SExt || K == Inst::Trunc)
         report_fatal_error("don't use zext/sext/trunc explicitly");
       else if (K == Inst::None)
-        report_fatal_error("unknown instruction: " + KindStr);
+        report_fatal_error((llvm::StringRef)"unknown instruction: " + KindStr);
       else if (UnsupportedCompKinds.count(K))
-        report_fatal_error("unsupported instruction: " + KindStr);
+        report_fatal_error((llvm::StringRef)"unsupported instruction: " + KindStr);
       else
         Kinds.push_back(K);
     }
@@ -773,7 +773,7 @@ Inst *InstSynthesis::getComponentInputConstraint(InstContext &IC) {
     if (DebugLevel > 2)
       llvm::outs() << "false\n";
     if (Ante == IC.getConst(APInt(1, false)))
-      report_fatal_error("no input available for " + getLocVarStr(L_x.first));
+      report_fatal_error((llvm::StringRef)"no input available for " + getLocVarStr(L_x.first));
     Ret = IC.getInst(Inst::And, 1, {Ret, Ante});
   }
 
@@ -929,7 +929,7 @@ Inst *InstSynthesis::createInstFromWiring(
     LocVar Match = getWiringLocVar(OpLoc, LineWiring);
     assert(CompInstMap.count(Match) && "unknown matching location variable");
     if (!CompInstMap.count(Match))
-      report_fatal_error("synthesis bug: component input " +
+      report_fatal_error((llvm::StringRef)"synthesis bug: component input " +
                          getLocVarStr(OpLoc) + " not wired");
     // Store wiring locations
     auto Left = getLocVarStr(OpLoc, LOC_PREFIX);

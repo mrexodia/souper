@@ -25,13 +25,14 @@
 #include "llvm/Object/ObjectFile.h"
 #include "llvm/Passes/PassBuilder.h"
 #include "llvm/Support/SmallVectorMemoryBuffer.h"
-#include "llvm/Support/TargetRegistry.h"
+// #include "llvm/Support/TargetRegistry.h"
+#include "llvm/MC/TargetRegistry.h"
 #include "llvm/Support/TargetSelect.h"
 #include "llvm/Target/TargetMachine.h"
 #include "llvm/Target/TargetOptions.h"
 #include <map>
 
-#define DEBUG_TYPE "souper"
+// #define DEBUG_TYPE "souper"
 
 using namespace llvm;
 
@@ -51,7 +52,7 @@ void optimizeModule(llvm::Module &M) {
   PB.crossRegisterProxies(LAM, FAM, CGAM, MAM);
 
   llvm::FunctionPassManager FPM =
-    PB.buildFunctionSimplificationPipeline(llvm::PassBuilder::OptimizationLevel::O2,
+    PB.buildFunctionSimplificationPipeline(OptimizationLevel::O2,
                                            ThinOrFullLTOPhase::None);
   llvm::ModulePassManager MPM;
   MPM.addPass(createModuleToFunctionPassAdaptor(std::move(FPM)));

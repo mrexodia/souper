@@ -445,7 +445,7 @@ namespace souper {
     }
 
     default:
-      llvm::report_fatal_error("unimplemented instruction kind " +
+      llvm::report_fatal_error((llvm::StringRef) "unimplemented instruction kind " +
                                std::string(Inst::getKindName(Inst->K)) +
                                " in interpreter");
     }

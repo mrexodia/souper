@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#define DEBUG_TYPE "souper"
+// #define DEBUG_TYPE "souper"
 
 #include "souper/Codegen/Codegen.h"
 #include "souper/Inst/Inst.h"
@@ -24,10 +24,10 @@
 #include "llvm/IR/Value.h"
 #include <map>
 
-STATISTIC(InstructionReplaced,
-          "Number of instructions replaced by another instruction");
-STATISTIC(DominanceCheckFailed,
-          "Number of failed replacement due to dominance check");
+// STATISTIC(InstructionReplaced,
+//           "Number of instructions replaced by another instruction");
+// STATISTIC(DominanceCheckFailed,
+//           "Number of failed replacement due to dominance check");
 
 using namespace llvm;
 
@@ -78,12 +78,12 @@ llvm::Value *Codegen::getValue(Inst *I) {
         return V;
       if (auto IP = dyn_cast<Instruction>(V)) {
         if (DT->dominates(IP, ReplacedInst)) {
-          ++InstructionReplaced;
+          // ++InstructionReplaced;
           return V;
         } else {
 	  if (DebugLevel > 2)
 	    llvm::errs() << "dominance check failed\n";
-          ++DominanceCheckFailed;
+          // ++DominanceCheckFailed;
         }
       } else {
         report_fatal_error("Unhandled LLVM instruction in getValue()");
@@ -316,7 +316,7 @@ llvm::Value *Codegen::getValue(Inst *I) {
   // FIXME: [US]{Add,Sub,Mul}O
   // FIXME: PHI
 
-  report_fatal_error((std::string) "Unhandled Souper instruction " +
+  report_fatal_error((llvm::StringRef) "Unhandled Souper instruction " +
                      Inst::getKindName(I->K) + " in Codegen::getValue()");
 }
 

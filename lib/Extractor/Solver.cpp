@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#define DEBUG_TYPE "souper"
+// #define DEBUG_TYPE "souper"
 
 #include "llvm/ADT/APInt.h"
 #include "llvm/ADT/SetVector.h"
@@ -34,12 +34,12 @@
 
 #include <unordered_map>
 
-STATISTIC(MemHitsInfer, "Number of internal cache hits for infer()");
-STATISTIC(MemMissesInfer, "Number of internal cache misses for infer()");
-STATISTIC(MemHitsIsValid, "Number of internal cache hits for isValid()");
-STATISTIC(MemMissesIsValid, "Number of internal cache misses for isValid()");
-STATISTIC(ExternalHits, "Number of external cache hits");
-STATISTIC(ExternalMisses, "Number of external cache misses");
+// STATISTIC(MemHitsInfer, "Number of internal cache hits for infer()");
+// STATISTIC(MemMissesInfer, "Number of internal cache misses for infer()");
+// STATISTIC(MemHitsIsValid, "Number of internal cache hits for isValid()");
+// STATISTIC(MemMissesIsValid, "Number of internal cache misses for isValid()");
+// STATISTIC(ExternalHits, "Number of external cache hits");
+// STATISTIC(ExternalMisses, "Number of external cache misses");
 
 using namespace souper;
 using namespace llvm;
@@ -670,7 +670,7 @@ public:
     std::string Repl = GetReplacementLHSString(BPCs, PCs, LHS, Context);
     const auto &ent = InferCache.find(Repl);
     if (ent == InferCache.end()) {
-      ++MemMissesInfer;
+      // ++MemMissesInfer;
       std::error_code EC = UnderlyingSolver->infer(BPCs, PCs, LHS, RHSs,
                                                    AllowMultipleRHSs, IC);
       std::string RHSStr;
@@ -681,7 +681,7 @@ public:
       InferCache.emplace(Repl, std::make_pair(EC, RHSStr));
       return EC;
     } else {
-      ++MemHitsInfer;
+      // ++MemHitsInfer;
       std::string ES;
       StringRef S = ent->second.second;
       if (S == "") {
@@ -723,13 +723,13 @@ public:
     std::string Repl = GetReplacementString(BPCs, PCs, Mapping);
     const auto &ent = IsValidCache.find(Repl);
     if (ent == IsValidCache.end()) {
-      ++MemMissesIsValid;
+      // ++MemMissesIsValid;
       std::error_code EC = UnderlyingSolver->isValid(IC, BPCs, PCs,
                                                      Mapping, IsValid, 0);
       IsValidCache.emplace(Repl, std::make_pair(EC, IsValid));
       return EC;
     } else {
-      ++MemHitsIsValid;
+      // ++MemHitsIsValid;
       IsValid = ent->second.second;
       return ent->second.first;
     }
@@ -830,7 +830,7 @@ public:
     if (KV->hGet(LHSStr, "rhs", S)) {
       if (DebugLevel > 3)
         llvm::errs() << "(external cache hit)\n";
-      ++ExternalHits;
+      // ++ExternalHits;
       if (S == "") {
         RHSs.clear();
       } else {
@@ -842,7 +842,7 @@ public:
       }
       return std::error_code();
     } else {
-      ++ExternalMisses;
+      // ++ExternalMisses;
       if (DebugLevel > 3)
         llvm::errs() << "(external cache miss)\n";
       if (NoInfer) {

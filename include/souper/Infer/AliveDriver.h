@@ -17,8 +17,8 @@
 
 #include "souper/Infer/Interpreter.h"
 #include "souper/Inst/Inst.h"
-#include "alive2/ir/function.h"
-#include "alive2/smt/smt.h"
+#include "ir/function.h"
+#include "smt/smt.h"
 
 #include <unordered_map>
 #include <optional>

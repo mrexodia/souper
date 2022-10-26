@@ -80,7 +80,9 @@ struct ExprBuilderOptions {
   /// controlled IR input (i.e. the unit tests).
   bool NamedArrays;
 
-  ExprBuilderOptions() : NamedArrays(false) {}
+  llvm::Value *CandidateFilterInstruction;
+
+  ExprBuilderOptions() : NamedArrays(false), CandidateFilterInstruction(nullptr) {}
 };
 
 struct BlockInfo {

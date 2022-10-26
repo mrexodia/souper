@@ -2,18 +2,18 @@
 #include "souper/Infer/AliveDriver.h"
 #include "souper/Inst/Inst.h"
 
-#include "alive2/ir/constant.h"
-#include "alive2/ir/function.h"
-#include "alive2/ir/instr.h"
-#include "alive2/ir/state.h"
-#include "alive2/smt/ctx.h"
-#include "alive2/smt/expr.h"
-#include "alive2/smt/smt.h"
-#include "alive2/smt/solver.h"
-#include "alive2/tools/transform.h"
-#include "alive2/util/config.h"
-#include "alive2/util/errors.h"
-#include "alive2/util/symexec.h"
+#include "ir/constant.h"
+#include "ir/function.h"
+#include "ir/instr.h"
+#include "ir/state.h"
+#include "smt/ctx.h"
+#include "smt/expr.h"
+#include "smt/smt.h"
+#include "smt/solver.h"
+#include "tools/transform.h"
+#include "util/config.h"
+#include "util/errors.h"
+#include "util/symexec.h"
 
 #include "llvm/Support/raw_ostream.h"
 #include "llvm/Support/CommandLine.h"
@@ -161,7 +161,7 @@ private:
   }
 
   IR::Value *toValue(IR::Type &t, llvm::APInt x) {
-    auto c = std::make_unique<IR::IntConst>(t, x.toString(10, false));
+    auto c = std::make_unique<IR::IntConst>(t, llvm::toString(x, 10, false));
     auto ptr = c.get();
     F.addConstant(std::move(c));
     return ptr;
@@ -238,7 +238,7 @@ performCegisFirstQuery(tools::Transform &t,
 
   std::set<smt::expr> Vars;
   std::map<std::string, smt::expr> SMTConsts;
-  for (auto &[Var, Val] : TgtState.getValues()) {
+  for (auto &[Var, Val, Used] : TgtState.getValues()) {
     auto &Name = Var->getName();
     if (startsWith("%reservedconst", Name)) {
       SMTConsts[Name] = Val.first.value;

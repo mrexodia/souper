@@ -956,6 +956,11 @@ void ExtractExprCandidates(Function &F, const LoopInfo *LI, DemandedBits *DB,
   for (auto &BB : F) {
     std::unique_ptr<BlockCandidateSet> BCS(new BlockCandidateSet);
     for (auto &I : BB) {
+
+      // Filter the candidate
+      if (Opts.CandidateFilterInstruction && Opts.CandidateFilterInstruction != &I)
+        continue;
+
       if (isa<ReturnInst>(I))
         PrintDataflowInfo(F, I, LVI, SE);
 

@@ -48,9 +48,13 @@ DebugFlagParser("souper-debug-level",
 
 int main(int argc, const char **argv) {
   llvm::sys::PrintStackTraceOnErrorSignal(argv[0]);
-  CommonOptionsParser OptionsParser(argc, argv, ClangSouperCategory);
-  ClangTool Tool(OptionsParser.getCompilations(),
-                 OptionsParser.getSourcePathList());
+  auto OptionsParser = CommonOptionsParser::create(argc, argv, ClangSouperCategory);
+  if (!OptionsParser) {
+    // TODO: add error message
+  }
+  // CommonOptionsParser OptionsParser(argc, argv, ClangSouperCategory);
+  ClangTool Tool(OptionsParser->getCompilations(),
+                 OptionsParser->getSourcePathList());
   InstContext IC;
   ExprBuilderContext EBC;
   CandidateMap CandMap;

@@ -19,7 +19,7 @@ namespace souper {
 
   std::string inline getPaddedBinaryString(llvm::APInt Result) {
     auto W = Result.getBitWidth();
-    auto Str = Result.toString(2, false);
+    auto Str = llvm::toString(Result, 2, false);
     while (Str.length() < W) {
       Str = "0" + Str;
     }

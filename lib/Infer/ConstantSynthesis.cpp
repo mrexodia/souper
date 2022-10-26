@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#define DEBUG_TYPE "souper"
+// #define DEBUG_TYPE "souper"
 
 #include "llvm/ADT/APInt.h"
 #include "llvm/Support/CommandLine.h"
@@ -244,7 +244,7 @@ Inst *getConstConstraint(Inst::Kind K, unsigned OpNum, Inst *C,
     return IC.getConst(llvm::APInt(1, true));
 
   default:
-    llvm::report_fatal_error("unmatched: " + (std::string)Inst::getKindName(K));
+    llvm::report_fatal_error((llvm::StringRef)"unmatched: " + (std::string)Inst::getKindName(K));
   }
 }
 

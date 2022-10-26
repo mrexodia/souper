@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#define DEBUG_TYPE "souper"
+// #define DEBUG_TYPE "souper"
 
 #include "llvm/ADT/Statistic.h"
 #include "llvm/Analysis/DemandedBits.h"
@@ -47,8 +47,8 @@
 #include "souper/Tool/CandidateMapUtils.h"
 #include "set"
 
-STATISTIC(InstructionReplaced, "Number of instructions replaced by another instruction");
-STATISTIC(DominanceCheckFailed, "Number of failed replacement due to dominance check");
+// STATISTIC(InstructionReplaced, "Number of instructions replaced by another instruction");
+// STATISTIC(DominanceCheckFailed, "Number of failed replacement due to dominance check");
 
 using namespace souper;
 using namespace llvm;
@@ -390,7 +390,8 @@ public:
         }
       }
 
-      eliminateDeadCode(*F, TLI);
+      // TODO: figure it out
+      // eliminateDeadCode(*F, TLI);
 
       if (DebugLevel > 2) {
         if (DebugLevel > 4) {

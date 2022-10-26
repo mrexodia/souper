@@ -65,7 +65,7 @@ template<> struct llvm::DOTGraphTraits<souper::Inst*> : public llvm::DefaultDOTG
     case souper::Inst::Kind::Var:
       return "Var " + instr->Name;
     case souper::Inst::Kind::Const:
-      return instr->Val.toString(10, false);
+      return llvm::toString(instr->Val, 10, false);
     default:
       return std::string(souper::Inst::getKindName(instr->K));
     }
