@@ -116,6 +116,10 @@ endif()
 
 source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${souper_SOURCES})
 
+target_compile_features(souper PUBLIC
+	cxx_std_20
+)
+
 target_include_directories(souper PRIVATE
 	include
 	"${klee_SOURCE_DIR}/include"

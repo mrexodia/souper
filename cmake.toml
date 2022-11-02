@@ -52,3 +52,6 @@ include-after = [
     "cmake/klee-expr.cmake",
     "cmake/package.cmake",
 ]
+compile-features = [
+    "cxx_std_20",
+]
