@@ -17,6 +17,7 @@
 
 #include "llvm/Support/KnownBits.h"
 #include "llvm/IR/ConstantRange.h"
+#include "llvm/IR/Operator.h"
 
 #include "souper/Inst/Inst.h"
 #include "souper/Infer/Interpreter.h"
