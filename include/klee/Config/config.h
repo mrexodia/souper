@@ -12,5 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#ifndef LLVM_VERSION_MAJOR
 #define LLVM_VERSION_MAJOR 14
+#endif // LLVM_VERSION_MAJOR
+
+#ifndef LLVM_VERSION_MINOR
 #define LLVM_VERSION_MINOR 0
+#endif // LLVM_VERSION_MINOR
