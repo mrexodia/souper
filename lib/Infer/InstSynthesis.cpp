@@ -24,7 +24,7 @@ using namespace llvm;
 
 namespace {
 
-extern "C" cl::opt<unsigned> DebugLevel("souper-synthesis-debug-level",
+static cl::opt<unsigned> DebugLevel("souper-synthesis-debug-level",
     cl::desc("Synthesis debug level (default=0). "
     "The larger the number is, the more fine-grained debug "
     "information will be printed"),
