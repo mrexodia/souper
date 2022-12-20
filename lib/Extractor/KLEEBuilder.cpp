@@ -157,7 +157,7 @@ private:
               E = SelectExpr::create(ExprMap[PredExpr[J-1]], E, ExprMap[Ops[J]]);
             }
             node = E;
-          }
+          } break;
           case Inst::Freeze: {
             node = ExprMap[Ops[0]];
           } break;
@@ -218,6 +218,7 @@ private:
 
             switch (I->K) {
             default:
+              llvm_unreachable("unknown kind");
               break;
 
             case Inst::UDiv: {
@@ -238,9 +239,8 @@ private:
             case Inst::SRem: {
               node = SRemExpr::create(ExprMap[Ops[0]], R);
             } break;
-            llvm_unreachable("unknown kind");
           }
-          }
+          } break;
 
           case Inst::And: {
             node = buildAssoc(AndExpr::create, Ops);
