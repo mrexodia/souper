@@ -32,6 +32,15 @@
 #include <unistd.h>
 #include <system_error>
 
+#if LLVM_VERSION_MAJOR >= 17
+#include <optional>
+namespace llvm
+{
+  template<class T>
+  using Optional = std::optional<T>;
+}
+#endif // LLVM_VERSION_MAJOR
+
 using namespace llvm;
 using namespace souper;
 
@@ -314,7 +323,7 @@ SolverProgram souper::makeExternalSolverProgram(StringRef Path) {
     ArgPtrs.push_back(PathStr);
     ArgPtrs.insert(ArgPtrs.end(), Args.begin(), Args.end());
     Optional<StringRef> Redirects[] = {RedirectIn, RedirectOut, RedirectErr};
-    return sys::ExecuteAndWait(PathStr, ArgPtrs, None, Redirects, Timeout);
+    return sys::ExecuteAndWait(PathStr, ArgPtrs, {}, Redirects, Timeout);
   };
 }
 
@@ -359,7 +368,11 @@ SolverProgram souper::makeInternalSolverProgram(int MainPtr(int argc,
     } else {
       sys::ProcessInfo PI;
       PI.Pid = pid;
-      PI = sys::Wait(PI, Timeout, /*WaitUntilTerminates=*/Timeout == 0);
+      Optional<unsigned> SecondsToWait;
+      if(Timeout > 0) {
+        SecondsToWait = Timeout;
+      }
+      PI = sys::Wait(PI, SecondsToWait);
       return PI.ReturnCode;
     }
   };

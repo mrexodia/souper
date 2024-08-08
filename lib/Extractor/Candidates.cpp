@@ -18,6 +18,7 @@
 #include "llvm/Analysis/LazyValueInfo.h"
 #include "llvm/Analysis/LoopInfo.h"
 #include "llvm/Analysis/ScalarEvolution.h"
+#include "llvm/Analysis/DemandedBits.h"
 #include "llvm/IR/BasicBlock.h"
 #include "llvm/IR/ConstantRange.h"
 #include "llvm/IR/Constants.h"
@@ -246,7 +247,7 @@ Inst *ExprBuilder::makeArrayRead(Value *V) {
 
   return IC.createVar(Width, Name, Range, Known.Zero, Known.One, NonZero, NonNegative,
                       PowOfTwo, Negative, NumSignBits,
-                      llvm::APInt::getAllOnesValue(Width), 0);
+                      llvm::APInt::getAllOnes(Width), 0);
 }
 
 Inst *ExprBuilder::buildConstant(Constant *c) {
@@ -655,7 +656,7 @@ Inst *ExprBuilder::get(Value *V, APInt DemandedBits) {
 Inst *ExprBuilder::getFromUse(Value *V) {
   // Do not find from cache
   unsigned Width = DL.getTypeSizeInBits(V->getType());
-  APInt DemandedBits = APInt::getAllOnesValue(Width);
+  APInt DemandedBits = APInt::getAllOnes(Width);
   Inst *E = build(V, DemandedBits);
   if (E->K != Inst::Const && !E->hasOrigin(V))
     E->Origins.push_back(V);
@@ -667,7 +668,7 @@ Inst *ExprBuilder::get(Value *V) {
   Inst *&E = EBC.InstMap[V];
   if (!E) {
     unsigned Width = DL.getTypeSizeInBits(V->getType());
-    APInt DemandedBits = APInt::getAllOnesValue(Width);
+    APInt DemandedBits = APInt::getAllOnes(Width);
     E = build(V, DemandedBits);
   }
   if (E->K != Inst::Const && !E->hasOrigin(V))
@@ -1062,7 +1063,7 @@ public:
 
   void getAnalysisUsage(AnalysisUsage &Info) const {
     Info.addRequired<LoopInfoWrapperPass>();
-    Info.addRequired<DemandedBitsWrapperPass>();
+    Info.addRequired<DemandedBits>();
     Info.addRequired<TargetLibraryInfoWrapperPass>();
     Info.addRequired<LazyValueInfoWrapperPass>();
     Info.addRequired<ScalarEvolutionWrapperPass>();
@@ -1074,7 +1075,7 @@ public:
     LoopInfo *LI = &getAnalysis<LoopInfoWrapperPass>().getLoopInfo();
     if (!LI)
       report_fatal_error("getLoopInfo() failed");
-    DemandedBits *DB = &getAnalysis<DemandedBitsWrapperPass>().getDemandedBits();
+    DemandedBits *DB = &getAnalysis<DemandedBitsAnalysis>();
     if (!DB)
       report_fatal_error("getDemandedBits() failed");
     LazyValueInfo *LVI = &getAnalysis<LazyValueInfoWrapperPass>().getLVI();

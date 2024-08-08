@@ -34,6 +34,15 @@
 
 // #define DEBUG_TYPE "souper"
 
+#if LLVM_VERSION_MAJOR >= 17
+#include <optional>
+namespace llvm
+{
+  template<class T>
+  using Optional = std::optional<T>;
+}
+#endif // LLVM_VERSION_MAJOR
+
 using namespace llvm;
 
 namespace souper {
